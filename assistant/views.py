@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import json
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse
@@ -71,3 +72,8 @@ def delete_faq_view(request, faq_id):
     faq.delete()
     messages.success(request, "FAQ removed from AI knowledge base.")
     return redirect("shop_settings")
+=======
+from django.shortcuts import render
+
+# Create your views here.
+>>>>>>> 1b21a4b3baae80a347efe13906d445db26a2bb0d

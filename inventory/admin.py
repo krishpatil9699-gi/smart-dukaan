@@ -1,4 +1,5 @@
 from django.contrib import admin
+<<<<<<< HEAD
 from .models import Category, Product, StockAuditLog
 
 
@@ -21,3 +22,7 @@ class StockAuditLogAdmin(admin.ModelAdmin):
     list_display = ('product', 'movement_type', 'quantity_changed', 'stock_after', 'reason', 'timestamp')
     list_filter = ('movement_type', 'timestamp')
     search_fields = ('product__name', 'reason')
+=======
+
+# Register your models here.
+>>>>>>> 1b21a4b3baae80a347efe13906d445db26a2bb0d

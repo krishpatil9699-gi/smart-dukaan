@@ -6,7 +6,11 @@ import sys
 
 def main():
     """Run administrative tasks."""
+<<<<<<< HEAD
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'core.settings')
+=======
+    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'smartdukaan.settings')
+>>>>>>> 1b21a4b3baae80a347efe13906d445db26a2bb0d
     try:
         from django.core.management import execute_from_command_line
     except ImportError as exc:
