@@ -1,0 +1,172 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ customer.name }}'s Khata Ledger - Smart Dukaan{% endblock %}
+
+{% block content %}
+<div class="row g-3">
+    <!-- Left Column: Customer Profile & Action Cards -->
+    <div class="col-12 col-lg-4">
+        <div class="card border-0 shadow-sm p-4 mb-3">
+            <div class="d-flex justify-content-between align-items-start border-bottom pb-3 mb-3">
+                <div>
+                    <h5 class="fw-bold mb-1">{{ customer.name }}</h5>
+                    <span class="font-monospace text-muted small"><i class="fa-solid fa-phone me-1"></i> {{ customer.phone }}</span>
+                    {% if customer.address %}<p class="text-muted small mt-1 mb-0">{{ customer.address }}</p>{% endif %}
+                </div>
+                <a href="{% url 'customer_list' %}" class="btn btn-sm btn-light border" title="Back">
+                    <i class="fa-solid fa-arrow-left"></i>
+                </a>
+            </div>
+
+            <!-- Balances -->
+            <div class="border rounded p-3 mb-3 {% if customer.current_balance > 0 %}bg-danger-subtle border-danger-subtle{% else %}bg-success-subtle border-success-subtle{% endif %}">
+                <span class="small fw-semibold {% if customer.current_balance > 0 %}text-danger{% else %}text-success{% endif %}">
+                    PENDING UDHAR BALANCE
+                </span>
+                <h2 class="fw-bold my-1 {% if customer.current_balance > 0 %}text-danger{% else %}text-success{% endif %}">
+                    ₹{{ customer.current_balance|floatformat:2 }}
+                </h2>
+                <div class="d-flex justify-content-between small text-muted mt-2 border-top pt-2">
+                    <span>Credit Limit: ₹{{ customer.credit_limit|floatformat:2 }}</span>
+                    <span>Remaining: ₹{{ customer.available_credit|floatformat:2 }}</span>
+                </div>
+            </div>
+
+            <!-- Action Buttons: Add Udhar / Record Payment -->
+            <div class="d-grid gap-2">
+                <button type="button" class="btn btn-danger py-2 fw-bold" data-bs-toggle="modal" data-bs-target="#addUdharModal">
+                    <i class="fa-solid fa-minus-circle me-1"></i> Give Udhar (+₹ Due)
+                </button>
+                <button type="button" class="btn btn-success py-2 fw-bold" data-bs-toggle="modal" data-bs-target="#recordPaymentModal">
+                    <i class="fa-solid fa-plus-circle me-1"></i> Receive Payment (-₹ Jama)
+                </button>
+
+                <!-- WhatsApp Reminder -->
+                {% if customer.current_balance > 0 %}
+                <a href="{{ wa_link }}" target="_blank" class="btn btn-outline-success py-2 mt-2">
+                    <i class="fa-brands fa-whatsapp me-1 fs-5 align-middle"></i> Send WhatsApp Reminder
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column: Ledger Chronological Transactions -->
+    <div class="col-12 col-lg-8">
+        <div class="card border-0 shadow-sm p-4">
+            <h5 class="fw-bold mb-3">Transaction History & Ledger</h5>
+
+            <div class="table-responsive">
+                <table class="table custom-table align-middle">
+                    <thead>
+                        <tr>
+                            <th>Date & Time</th>
+                            <th>Transaction Type</th>
+                            <th>Mode / Details</th>
+                            <th class="text-end">Amount</th>
+                            <th class="text-end">Balance After</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for tx in transactions %}
+                        <tr>
+                            <td class="small text-muted">{{ tx.date|date:"d M Y, h:i A" }}</td>
+                            <td>
+                                {% if tx.transaction_type == 'CREDIT' %}
+                                    <span class="badge bg-danger-subtle text-danger">Udhar Given</span>
+                                {% else %}
+                                    <span class="badge bg-success-subtle text-success">Payment Received</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="fw-semibold small">{{ tx.notes|default:tx.payment_mode }}</span>
+                            </td>
+                            <td class="text-end fw-bold {% if tx.transaction_type == 'CREDIT' %}text-danger{% else %}text-success{% endif %}">
+                                {% if tx.transaction_type == 'CREDIT' %}+{% else %}-{% endif %}₹{{ tx.amount|floatformat:2 }}
+                            </td>
+                            <td class="text-end font-monospace">₹{{ tx.balance_after|floatformat:2 }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center py-5 text-muted">
+                                <i class="fa-solid fa-receipt fa-2x mb-2 text-muted"></i>
+                                <p class="mb-0">No transactions recorded for this customer yet.</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Give Udhar (Credit) -->
+<div class="modal fade" id="addUdharModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="POST" action="{% url 'add_transaction' customer.id %}">
+                {% csrf_token %}
+                <input type="hidden" name="transaction_type" value="CREDIT">
+                <div class="modal-header bg-danger-subtle">
+                    <h5 class="modal-title fw-bold text-danger">Give Udhar (Credit)</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Amount to Add (₹) <span class="text-danger">*</span></label>
+                        <input type="number" step="0.01" name="amount" class="form-control" placeholder="e.g. 500" required min="1">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Description / Bill Reference</label>
+                        <input type="text" name="notes" class="form-control" placeholder="e.g. Rice and Oil purchase">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger fw-bold">Confirm Udhar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Receive Payment (Debit) -->
+<div class="modal fade" id="recordPaymentModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="POST" action="{% url 'add_transaction' customer.id %}">
+                {% csrf_token %}
+                <input type="hidden" name="transaction_type" value="PAYMENT">
+                <div class="modal-header bg-success-subtle">
+                    <h5 class="modal-title fw-bold text-success">Receive Payment (Jama)</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Amount Received (₹) <span class="text-danger">*</span></label>
+                        <input type="number" step="0.01" name="amount" class="form-control" placeholder="e.g. 500" required min="1">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Payment Mode</label>
+                        <select name="payment_mode" class="form-select">
+                            <option value="CASH">Cash</option>
+                            <option value="UPI">UPI / QR</option>
+                            <option value="BANK">Bank Transfer</option>
+                            <option value="OTHER">Other</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Notes</label>
+                        <input type="text" name="notes" class="form-control" placeholder="e.g. Paid via GPay">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success fw-bold">Record Payment</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+
+{% block title %}Product Categories - Smart Dukaan{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <!-- Add Category Form -->
+    <div class="col-12 col-md-5">
+        <div class="card border-0 shadow-sm p-4">
+            <h5 class="fw-bold mb-3">Add New Category</h5>
+            <form method="POST">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Category Name <span class="text-danger">*</span></label>
+                    <input type="text" name="name" class="form-control" placeholder="e.g. Dairy, Spices, Snacks" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Description</label>
+                    <textarea name="description" class="form-control" rows="3" placeholder="Optional category details"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary w-100 fw-bold">Create Category</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Category List -->
+    <div class="col-12 col-md-7">
+        <div class="card border-0 shadow-sm p-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="fw-bold mb-0">Existing Categories</h5>
+                <a href="{% url 'product_list' %}" class="btn btn-sm btn-outline-secondary">Back to Products</a>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table custom-table align-middle">
+                    <thead>
+                        <tr>
+                            <th>Category Name</th>
+                            <th>Description</th>
+                            <th>Products Count</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for cat in categories %}
+                        <tr>
+                            <td class="fw-bold">{{ cat.name }}</td>
+                            <td class="small text-muted">{{ cat.description|default:"-" }}</td>
+                            <td>
+                                <span class="badge bg-primary-subtle text-primary">
+                                    {{ cat.products.count }} items
+                                </span>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3" class="text-center py-4 text-muted">No categories created yet.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,214 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - Smart Dukaan{% endblock %}
+
+{% block content %}
+<div class="row g-3 mb-4">
+    <div class="col-12 col-md-6 col-xl-3">
+        <div class="card stat-card p-3 h-100">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <span class="text-muted small fw-semibold">TODAY'S SALES</span>
+                    <h3 class="fw-bold text-dark mt-1 mb-0">₹{{ today_sales|floatformat:2 }}</h3>
+                    <span class="badge bg-primary-subtle text-primary mt-2">
+                        <i class="fa-solid fa-cart-shopping me-1"></i> {{ today_orders_count }} Bills Today
+                    </span>
+                </div>
+                <div class="stat-icon-box bg-primary-subtle text-primary">
+                    <i class="fa-solid fa-indian-rupee-sign"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-md-6 col-xl-3">
+        <div class="card stat-card p-3 h-100">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <span class="text-muted small fw-semibold">PENDING KHATA (UDHAR)</span>
+                    <h3 class="fw-bold text-danger mt-1 mb-0">₹{{ total_udhar|floatformat:2 }}</h3>
+                    <span class="badge bg-danger-subtle text-danger mt-2">
+                        <i class="fa-solid fa-user-clock me-1"></i> {{ customers_due_count }} Customers Due
+                    </span>
+                </div>
+                <div class="stat-icon-box bg-danger-subtle text-danger">
+                    <i class="fa-solid fa-book-bookmark"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-md-6 col-xl-3">
+        <div class="card stat-card p-3 h-100">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <span class="text-muted small fw-semibold">LOW STOCK WARNINGS</span>
+                    <h3 class="fw-bold text-warning mt-1 mb-0">{{ low_stock_count }}</h3>
+                    <span class="badge bg-warning-subtle text-warning mt-2">
+                        <i class="fa-solid fa-triangle-exclamation me-1"></i> Needs Restock
+                    </span>
+                </div>
+                <div class="stat-icon-box bg-warning-subtle text-warning">
+                    <i class="fa-solid fa-boxes-packing"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-md-6 col-xl-3">
+        <div class="card stat-card p-3 h-100">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <span class="text-muted small fw-semibold">THIS MONTH REVENUE</span>
+                    <h3 class="fw-bold text-success mt-1 mb-0">₹{{ month_sales|floatformat:2 }}</h3>
+                    <span class="badge bg-success-subtle text-success mt-2">
+                        <i class="fa-solid fa-arrow-trend-up me-1"></i> {{ total_products }} Active Items
+                    </span>
+                </div>
+                <div class="stat-icon-box bg-success-subtle text-success">
+                    <i class="fa-solid fa-wallet"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row -->
+<div class="row g-3 mb-4">
+    <div class="col-12 col-lg-8">
+        <div class="card border-0 shadow-sm p-4 h-100">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <h5 class="fw-bold mb-0">7-Day Sales Trend</h5>
+                <span class="text-muted small">Daily Revenue</span>
+            </div>
+            <div style="height: 280px; position: relative;">
+                <canvas id="revenueTrendChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-lg-4">
+        <div class="card border-0 shadow-sm p-4 h-100">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <h5 class="fw-bold mb-0">Payment Modes</h5>
+                <span class="text-muted small">Cash vs UPI vs Khata</span>
+            </div>
+            <div style="height: 280px; position: relative;" class="d-flex align-items-center justify-content-center">
+                <canvas id="paymentModeChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tables Row -->
+<div class="row g-3">
+    <!-- Recent Invoices -->
+    <div class="col-12 col-lg-7">
+        <div class="card border-0 shadow-sm p-3 h-100">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <h5 class="fw-bold mb-0">Recent Billing Invoices</h5>
+                <a href="{% url 'order_list' %}" class="small text-primary text-decoration-none">View All</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table custom-table align-middle">
+                    <thead>
+                        <tr>
+                            <th>Invoice #</th>
+                            <th>Customer</th>
+                            <th>Payment</th>
+                            <th>Amount</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for order in recent_orders %}
+                        <tr>
+                            <td class="fw-semibold text-primary">{{ order.invoice_number }}</td>
+                            <td>{{ order.customer_name|default:"Walk-in Customer" }}</td>
+                            <td>
+                                {% if order.payment_method == 'CASH' %}
+                                    <span class="badge bg-success-subtle text-success">Cash</span>
+                                {% elif order.payment_method == 'UPI' %}
+                                    <span class="badge bg-info-subtle text-info">UPI / QR</span>
+                                {% else %}
+                                    <span class="badge bg-danger-subtle text-danger">Khata (Udhar)</span>
+                                {% endif %}
+                            </td>
+                            <td class="fw-bold">₹{{ order.net_payable|floatformat:2 }}</td>
+                            <td>
+                                <a href="{% url 'invoice_detail' order.invoice_number %}" class="btn btn-sm btn-light border" title="Print/View">
+                                    <i class="fa-solid fa-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center py-4 text-muted">
+                                <i class="fa-solid fa-receipt fa-2x mb-2 text-muted"></i>
+                                <p class="mb-0">No invoices yet. Click "Quick POS Bill" to start selling!</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Low Stock Alert -->
+    <div class="col-12 col-lg-5">
+        <div class="card border-0 shadow-sm p-3 h-100">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <h5 class="fw-bold mb-0 text-danger">
+                    <i class="fa-solid fa-bell me-1"></i> Low Stock Alerts
+                </h5>
+                <a href="{% url 'product_list' %}?filter=low_stock" class="small text-danger text-decoration-none">Manage</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table custom-table align-middle">
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th>In Stock</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for product in low_stock_products %}
+                        <tr>
+                            <td>
+                                <div class="fw-semibold">{{ product.name }}</div>
+                                <span class="text-muted fs-7">Alert below: {{ product.low_stock_threshold }} {{ product.unit }}</span>
+                            </td>
+                            <td>
+                                <span class="badge bg-danger-subtle text-danger fw-bold">
+                                    {{ product.stock_quantity }} {{ product.unit }}
+                                </span>
+                            </td>
+                            <td>
+                                <a href="{% url 'product_list' %}" class="btn btn-sm btn-outline-primary">
+                                    Restock
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3" class="text-center py-4 text-muted">
+                                <i class="fa-solid fa-circle-check fa-2x text-success mb-2"></i>
+                                <p class="mb-0 text-success">All products are healthy in stock!</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Chart.js Library -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="/static/js/dashboard_charts.js"></script>
+{% endblock %}

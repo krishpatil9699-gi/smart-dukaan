@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ action }} Product - Smart Dukaan{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-12 col-lg-8">
+        <div class="card border-0 shadow-sm p-4">
+            <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-4">
+                <h4 class="fw-bold mb-0">{{ action }} Product</h4>
+                <a href="{% url 'product_list' %}" class="btn btn-outline-secondary btn-sm">
+                    <i class="fa-solid fa-arrow-left me-1"></i> Back to Inventory
+                </a>
+            </div>
+
+            <form method="POST" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="row g-3">
+                    <div class="col-12 col-md-8">
+                        <label class="form-label fw-semibold">Product Name <span class="text-danger">*</span></label>
+                        <input type="text" name="name" class="form-control" value="{{ product.name|default:'' }}" required placeholder="e.g. Tata Salt 1kg">
+                    </div>
+
+                    <div class="col-12 col-md-4">
+                        <label class="form-label fw-semibold">Category</label>
+                        <select name="category" class="form-select">
+                            <option value="">Select Category</option>
+                            {% for cat in categories %}
+                                <option value="{{ cat.id }}" {% if product.category.id == cat.id %}selected{% endif %}>{{ cat.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-12 col-md-6">
+                        <label class="form-label fw-semibold">Barcode / SKU</label>
+                        <input type="text" name="barcode" class="form-control" value="{{ product.barcode|default:'' }}" placeholder="Scan or enter barcode number">
+                    </div>
+
+                    <div class="col-6 col-md-3">
+                        <label class="form-label fw-semibold">Unit of Measure</label>
+                        <select name="unit" class="form-select">
+                            <option value="pcs" {% if product.unit == 'pcs' %}selected{% endif %}>Pieces (pcs)</option>
+                            <option value="kg" {% if product.unit == 'kg' %}selected{% endif %}>Kilogram (kg)</option>
+                            <option value="gm" {% if product.unit == 'gm' %}selected{% endif %}>Gram (gm)</option>
+                            <option value="litre" {% if product.unit == 'litre' %}selected{% endif %}>Litre (L)</option>
+                            <option value="packet" {% if product.unit == 'packet' %}selected{% endif %}>Packet (pkt)</option>
+                            <option value="box" {% if product.unit == 'box' %}selected{% endif %}>Box</option>
+                        </select>
+                    </div>
+
+                    <div class="col-6 col-md-3">
+                        <label class="form-label fw-semibold">Stock Quantity</label>
+                        <input type="number" name="stock_quantity" class="form-control" value="{{ product.stock_quantity|default:'0' }}" {% if action == 'Edit' %}readonly{% endif %}>
+                        {% if action == 'Edit' %}<span class="fs-8 text-muted">Use "Restock" to update stock count.</span>{% endif %}
+                    </div>
+
+                    <div class="col-12 col-md-4">
+                        <label class="form-label fw-semibold">Cost Price (₹)</label>
+                        <input type="number" step="0.01" name="cost_price" class="form-control" value="{{ product.cost_price|default:'0.00' }}" placeholder="Wholesale cost">
+                    </div>
+
+                    <div class="col-12 col-md-4">
+                        <label class="form-label fw-semibold">Selling Price (₹) <span class="text-danger">*</span></label>
+                        <input type="number" step="0.01" name="selling_price" class="form-control" value="{{ product.selling_price|default:'' }}" required placeholder="Retail customer price">
+                    </div>
+
+                    <div class="col-12 col-md-4">
+                        <label class="form-label fw-semibold">Low-Stock Alert Limit</label>
+                        <input type="number" name="low_stock_threshold" class="form-control" value="{{ product.low_stock_threshold|default:'5' }}">
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label fw-semibold">Description / Notes</label>
+                        <textarea name="description" class="form-control" rows="2" placeholder="Optional details for customer storefront or AI assistant...">{{ product.description|default:'' }}</textarea>
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label fw-semibold">Product Image</label>
+                        <input type="file" name="image" class="form-control" accept="image/*">
+                        {% if product.image %}
+                            <div class="mt-2 small text-muted">Current image: <a href="{{ product.image.url }}" target="_blank">{{ product.image.name }}</a></div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+                    <a href="{% url 'product_list' %}" class="btn btn-light">Cancel</a>
+                    <button type="submit" class="btn btn-primary px-4 fw-bold">Save Product</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ shop.shop_name|default:"Smart Dukaan" }} - Digital Product Catalogue</title>
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body class="bg-light pb-5">
+
+    <!-- Storefront Navigation / Header -->
+    <header class="bg-white border-bottom py-3 shadow-sm sticky-top">
+        <div class="container d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center gap-2">
+                <span class="brand-icon"><i class="fa-solid fa-store text-primary"></i></span>
+                <div>
+                    <h5 class="fw-bold mb-0 text-dark">{{ shop.shop_name|default:"Smart Dukaan" }}</h5>
+                    <span class="fs-8 text-muted">{{ shop.tagline|default:"Aapki Apni Digital Dukaan" }}</span>
+                </div>
+            </div>
+
+            <div class="d-flex align-items-center gap-2">
+                {% if shop.phone %}
+                <a href="tel:{{ shop.phone }}" class="btn btn-sm btn-outline-primary d-none d-sm-inline-flex align-items-center gap-1">
+                    <i class="fa-solid fa-phone"></i> Call Shop
+                </a>
+                {% endif %}
+                <a href="{% url 'login' %}" class="btn btn-sm btn-dark">
+                    <i class="fa-solid fa-lock me-1"></i> Owner Login
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Shop Info Banner -->
+    <section class="bg-primary text-white py-4 mb-4">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-12 col-md-8">
+                    <span class="badge bg-white text-primary mb-2">Live Digital Catalogue</span>
+                    <h2 class="fw-bold">{{ shop.shop_name|default:"Smart Dukaan" }}</h2>
+                    <p class="mb-2 text-white-50"><i class="fa-solid fa-location-dot me-1"></i> {{ shop.address|default:"Market Road" }}</p>
+                    <div class="d-flex flex-wrap gap-3 small text-white-50">
+                        <span><i class="fa-solid fa-clock me-1"></i> {{ shop.opening_time|default:"8:00 AM" }} - {{ shop.closing_time|default:"10:00 PM" }}</span>
+                        <span><i class="fa-solid fa-calendar-check me-1"></i> {{ shop.weekly_off|default:"Open 7 Days" }}</span>
+                        {% if shop.upi_id %}<span><i class="fa-solid fa-qrcode me-1"></i> UPI: {{ shop.upi_id }}</span>{% endif %}
+                    </div>
+                </div>
+                <div class="col-12 col-md-4 mt-3 mt-md-0 text-md-end">
+                    <button class="btn btn-light fw-bold px-3 py-2" id="openChatBtnBanner">
+                        <i class="fa-solid fa-robot text-primary me-1"></i> Ask AI Assistant
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Catalog Container -->
+    <main class="container">
+        <!-- Search and Filter Bar -->
+        <div class="card border-0 shadow-sm p-3 mb-4">
+            <form method="GET" class="row g-2">
+                <div class="col-12 col-md-8">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
+                        <input type="text" name="q" value="{{ query }}" class="form-control border-start-0" placeholder="Search products, groceries, daily items...">
+                    </div>
+                </div>
+                <div class="col-12 col-md-4 d-flex gap-2">
+                    <select name="category" class="form-select">
+                        <option value="">All Categories</option>
+                        {% for cat in categories %}
+                            <option value="{{ cat.id }}" {% if selected_category == cat.id|stringformat:"s" %}selected{% endif %}>{{ cat.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <button type="submit" class="btn btn-primary px-3">Filter</button>
+                    {% if query or selected_category %}
+                        <a href="{% url 'storefront' %}" class="btn btn-outline-secondary">Reset</a>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+
+        <!-- Products Grid -->
+        <div class="row g-3">
+            {% for product in products %}
+            <div class="col-6 col-md-4 col-lg-3">
+                <div class="card border-0 shadow-sm h-100 p-3 d-flex flex-direction-column">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="badge bg-light text-dark border fs-8">{{ product.category.name|default:"General" }}</span>
+                        {% if product.stock_quantity > 0 %}
+                            <span class="badge bg-success-subtle text-success fs-8">In Stock</span>
+                        {% else %}
+                            <span class="badge bg-danger-subtle text-danger fs-8">Out of Stock</span>
+                        {% endif %}
+                    </div>
+
+                    <div class="text-center py-3">
+                        {% if product.image %}
+                            <img src="{{ product.image.url }}" alt="{{ product.name }}" class="img-fluid rounded mb-2" style="max-height: 120px; object-fit: contain;">
+                        {% else %}
+                            <div class="bg-light rounded p-4 mb-2 text-muted">
+                                <i class="fa-solid fa-bag-shopping fa-3x"></i>
+                            </div>
+                        {% endif %}
+                        <h6 class="fw-bold text-dark text-truncate mb-1" title="{{ product.name }}">{{ product.name }}</h6>
+                        <span class="fs-8 text-muted d-block">per {{ product.unit }}</span>
+                        <div class="fs-5 fw-bold text-primary mt-2">₹{{ product.selling_price|floatformat:2 }}</div>
+                    </div>
+
+                    <div class="mt-auto border-top pt-2 text-center">
+                        <span class="fs-8 text-muted">
+                            {% if product.stock_quantity > 0 %}
+                                Available: {{ product.stock_quantity }} {{ product.unit }}
+                            {% else %}
+                                Currently Unavailable
+                            {% endif %}
+                        </span>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-12 text-center py-5">
+                <i class="fa-solid fa-basket-shopping fa-3x text-muted mb-3"></i>
+                <h5 class="fw-bold text-dark">No products found</h5>
+                <p class="text-muted">Try clearing your search query or category filter.</p>
+                <a href="{% url 'storefront' %}" class="btn btn-outline-primary">View All Products</a>
+            </div>
+            {% endfor %}
+        </div>
+    </main>
+
+    <!-- Floating AI Assistant Chat Widget -->
+    <button class="ai-chat-btn" id="aiChatToggleBtn" title="Chat with Dukaan Sahayak AI">
+        <i class="fa-solid fa-robot"></i>
+    </button>
+
+    <div class="ai-chat-box hidden" id="aiChatBox">
+        <div class="ai-chat-header d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center gap-2">
+                <i class="fa-solid fa-robot fs-5"></i>
+                <div>
+                    <h6 class="fw-bold mb-0">Dukaan Sahayak</h6>
+                    <span class="fs-8 text-white-50">Powered by Google Gemini</span>
+                </div>
+            </div>
+            <button class="btn btn-sm btn-link text-white p-0" id="closeChatBtn">
+                <i class="fa-solid fa-xmark fs-5"></i>
+            </button>
+        </div>
+
+        <div class="ai-chat-messages" id="storefrontChatMessages">
+            <div class="chat-bubble bot">
+                Namaste! 🙏 I am <strong>Dukaan Sahayak</strong>, your AI assistant for <strong>{{ shop.shop_name|default:"Smart Dukaan" }}</strong>.<br><br>
+                You can ask me about product prices, stock availability, shop timings, or payment modes!
+            </div>
+        </div>
+
+        <div class="p-2 bg-white border-top">
+            <div class="input-group">
+                <input type="text" id="storefrontChatInput" class="form-control form-control-sm" placeholder="Ask in English or Hindi (e.g. Is milk in stock?)...">
+                <button class="btn btn-sm btn-primary" id="storefrontChatSendBtn">
+                    <i class="fa-solid fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap Bundle JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const toggleBtn = document.getElementById("aiChatToggleBtn");
+            const bannerBtn = document.getElementById("openChatBtnBanner");
+            const closeBtn = document.getElementById("closeChatBtn");
+            const chatBox = document.getElementById("aiChatBox");
+            const chatInput = document.getElementById("storefrontChatInput");
+            const sendBtn = document.getElementById("storefrontChatSendBtn");
+            const chatMessages = document.getElementById("storefrontChatMessages");
+
+            function toggleChat() {
+                chatBox.classList.toggle("hidden");
+                if (!chatBox.classList.contains("hidden")) {
+                    chatInput.focus();
+                }
+            }
+
+            toggleBtn?.addEventListener("click", toggleChat);
+            bannerBtn?.addEventListener("click", () => {
+                chatBox.classList.remove("hidden");
+                chatInput.focus();
+            });
+            closeBtn?.addEventListener("click", () => chatBox.classList.add("hidden"));
+
+            function sendMessage() {
+                const text = chatInput.value.trim();
+                if (!text) return;
+
+                chatMessages.innerHTML += `<div class="chat-bubble user">${escapeHtml(text)}</div>`;
+                chatInput.value = "";
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+
+                const typingId = "typing-" + Date.now();
+                chatMessages.innerHTML += `<div class="chat-bubble bot" id="${typingId}"><i class="fa-solid fa-circle-notch fa-spin"></i> Checking store catalog...</div>`;
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+
+                fetch("/assistant/api/chat/", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ message: text })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    const typingEl = document.getElementById(typingId);
+                    if (typingEl) typingEl.remove();
+
+                    const reply = data.reply || data.error || "No reply received.";
+                    chatMessages.innerHTML += `<div class="chat-bubble bot">${formatReply(reply)}</div>`;
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                })
+                .catch(err => {
+                    const typingEl = document.getElementById(typingId);
+                    if (typingEl) typingEl.remove();
+                    chatMessages.innerHTML += `<div class="chat-bubble bot text-danger">Unable to reach assistant right now.</div>`;
+                });
+            }
+
+            sendBtn?.addEventListener("click", sendMessage);
+            chatInput?.addEventListener("keydown", function (e) {
+                if (e.key === "Enter") sendMessage();
+            });
+
+            function escapeHtml(text) {
+                const div = document.createElement("div");
+                div.innerText = text;
+                return div.innerHTML;
+            }
+
+            function formatReply(text) {
+                return text.replace(/\n/g, "<br>");
+            }
+        });
+    </script>
+</body>
+</html>
