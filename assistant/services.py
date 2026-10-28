@@ -1,9 +1,12 @@
 import os
+import logging
 from pathlib import Path
 from dotenv import dotenv_values
 from django.conf import settings
 from .models import ShopSettings, ShopFAQ
 from inventory.models import Product
+
+logger = logging.getLogger(__name__)
 
 try:
     from google import genai
@@ -20,12 +23,12 @@ def get_active_gemini_api_key():
     if shop and shop.gemini_api_key:
         return shop.gemini_api_key.strip()
 
-    # 2. Check process environment
+    # 2. Check process environment (e.g. Render/Railway environment variable)
     env_key = os.getenv("GEMINI_API_KEY", "").strip()
     if env_key:
         return env_key
 
-    # 3. Check live .env file dynamically without requiring server reboot
+    # 3. Check live .env file dynamically
     env_path = Path(settings.BASE_DIR) / '.env'
     if env_path.exists():
         vals = dotenv_values(env_path)
@@ -35,6 +38,41 @@ def get_active_gemini_api_key():
 
     # 4. Check django settings
     return getattr(settings, 'GEMINI_API_KEY', '').strip()
+
+
+def get_best_available_model(client):
+    """Queries the Gemini API for currently active models supported by this specific API key."""
+    fallback_priority = [
+        "gemini-2.5-flash",
+        "gemini-2.0-flash",
+        "gemini-2.0-flash-lite",
+        "gemini-2.5-pro",
+        "gemini-2.0-pro",
+        "gemini-1.5-flash-latest",
+        "gemini-1.5-flash-8b",
+        "gemini-1.5-flash",
+    ]
+
+    try:
+        # Dynamically list models available to this specific key on Google AI Studio
+        model_pager = client.models.list()
+        supported = [
+            m.name.replace("models/", "")
+            for m in model_pager
+            if "generateContent" in (m.supported_actions or [])
+        ]
+
+        if supported:
+            # Pick highest priority model that exists in available list
+            for candidate in fallback_priority:
+                if candidate in supported:
+                    return candidate
+            return supported[0]
+    except Exception as e:
+        logger.warning(f"Could not query models.list(): {e}")
+
+    # Default to current generation flash
+    return "gemini-2.5-flash"
 
 
 def build_shop_context():
@@ -102,7 +140,7 @@ Your Guidelines:
 
 
 def local_fallback_assistant(user_message: str) -> str:
-    """Intelligent catalog parser that answers store queries when Gemini API key is missing or quota is exceeded."""
+    """Intelligent catalog parser that answers store queries cleanly without showing raw errors."""
     query = user_message.lower().strip()
     shop = ShopSettings.objects.first()
 
@@ -114,7 +152,7 @@ def local_fallback_assistant(user_message: str) -> str:
     returns = shop.return_policy if shop else "Returns within 2 days with invoice."
 
     # 1. Greetings
-    if any(w in query for w in ["hi", "hello", "hey", "namaste", "pranam", "kese ho"]):
+    if any(w in query for w in ["hi", "hello", "hey", "namaste", "pranam", "kese ho", "kaise ho"]):
         return f"Namaste! 🙏 Welcome to **{shop_name}**! How can I help you today? You can ask about product availability, prices, store timings, or policies."
 
     # 2. Timings / Hours
@@ -140,7 +178,7 @@ def local_fallback_assistant(user_message: str) -> str:
             return f"🚚 **Delivery Info**:\n{delivery_faq.answer}"
         return f"🚚 Home delivery is available for nearby orders! Please call us directly at **{phone}** to place a delivery order."
 
-    # 7. Product Search in Live Inventory (Checks products before generic FAQs)
+    # 7. Product Search in Live Inventory
     all_products = Product.objects.filter(is_active=True)
     matched_products = []
     stopwords = {"what", "is", "the", "price", "of", "do", "you", "have", "in", "stock", "available", "cost", "rate", "and", "please", "kya", "hai", "bhav"}
@@ -168,47 +206,39 @@ def local_fallback_assistant(user_message: str) -> str:
 
     return (
         f"I couldn't find an exact match in our store catalog for '{user_message}'. "
-        f"Please feel free to call our shop directly at **{phone}** for assistance!\n\n"
-        f"*(💡 Note: Add your Google Gemini API key in Store Settings to enable full generative conversational responses)*"
+        f"Please feel free to call our shop directly at **{phone}** for assistance!"
     )
 
 
 def ask_shop_assistant(user_message: str) -> str:
-    """Invokes Google Gemini with fallback to local catalog engine."""
+    """Invokes Google Gemini with dynamic model discovery and clean fallback."""
     api_key = get_active_gemini_api_key()
 
-    # If no key configured, use intelligent local catalog engine
     if not api_key or not GENAI_AVAILABLE:
         return local_fallback_assistant(user_message)
-
-    # Models to attempt in sequence
-    model_candidates = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"]
-    last_error = None
 
     try:
         client = genai.Client(api_key=api_key)
         system_instruction = build_shop_context()
 
-        for model_name in model_candidates:
-            try:
-                response = client.models.generate_content(
-                    model=model_name,
-                    contents=user_message,
-                    config=types.GenerateContentConfig(
-                        system_instruction=system_instruction,
-                        temperature=0.3,
-                        max_output_tokens=350,
-                    )
-                )
-                if response and response.text:
-                    return response.text
-            except Exception as model_err:
-                last_error = model_err
-                # Try next candidate if model not found
-                continue
+        # Find the best active model supported by this key
+        target_model = get_best_available_model(client)
 
-        # If all Gemini models returned error (e.g. invalid key or quota), return fallback with notice
-        return f"{local_fallback_assistant(user_message)}\n\n*(Gemini API notice: {str(last_error)})*"
+        # Attempt generation
+        response = client.models.generate_content(
+            model=target_model,
+            contents=user_message,
+            config=types.GenerateContentConfig(
+                system_instruction=system_instruction,
+                temperature=0.3,
+                max_output_tokens=350,
+            )
+        )
+        if response and response.text:
+            return response.text
 
     except Exception as e:
-        return f"{local_fallback_assistant(user_message)}\n\n*(Notice: {str(e)})*"
+        logger.error(f"Gemini API invocation error: {e}")
+
+    # Seamless fallback answering without raw stack traces
+    return local_fallback_assistant(user_message)
