@@ -1,5 +1,4 @@
 from django.db import models
-<<<<<<< HEAD
 from django.contrib.auth.models import User
 
 
@@ -17,7 +16,3 @@ class UserProfile(models.Model):
 
     def __str__(self):
         return f"{self.user.username} ({self.get_role_display()})"
-=======
-
-# Create your models here.
->>>>>>> 1b21a4b3baae80a347efe13906d445db26a2bb0d

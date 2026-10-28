@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
@@ -28,8 +27,3 @@ def logout_view(request):
     logout(request)
     messages.info(request, "You have been logged out successfully.")
     return redirect('login')
-=======
-from django.shortcuts import render
-
-# Create your views here.
->>>>>>> 1b21a4b3baae80a347efe13906d445db26a2bb0d

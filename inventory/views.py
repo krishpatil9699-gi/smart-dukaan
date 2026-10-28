@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -163,8 +162,3 @@ def category_list_view(request):
 
     categories = Category.objects.all()
     return render(request, 'inventory/category_list.html', {'categories': categories})
-=======
-from django.shortcuts import render
-
-# Create your views here.
->>>>>>> 1b21a4b3baae80a347efe13906d445db26a2bb0d

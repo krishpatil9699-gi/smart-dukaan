@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 from datetime import timedelta
 from django.shortcuts import render
 from django.http import JsonResponse
@@ -111,8 +110,3 @@ def sales_chart_api(request):
             'data': top_quantities if top_quantities else [0],
         }
     })
-=======
-from django.shortcuts import render
-
-# Create your views here.
->>>>>>> 1b21a4b3baae80a347efe13906d445db26a2bb0d

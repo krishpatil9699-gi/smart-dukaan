@@ -1,6 +1,5 @@
 from django.db import models
 
-<<<<<<< HEAD
 
 class Category(models.Model):
     name = models.CharField(max_length=100, unique=True)
@@ -73,6 +72,3 @@ class StockAuditLog(models.Model):
 
     def __str__(self):
         return f"{self.product.name} | {self.movement_type} | {self.quantity_changed} | Balance: {self.stock_after}"
-=======
-# Create your models here.
->>>>>>> 1b21a4b3baae80a347efe13906d445db26a2bb0d
