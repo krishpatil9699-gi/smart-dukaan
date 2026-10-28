@@ -42,6 +42,9 @@ def shop_settings_view(request):
         settings_obj.weekly_off = request.POST.get("weekly_off", settings_obj.weekly_off)
         settings_obj.upi_id = request.POST.get("upi_id", settings_obj.upi_id)
         settings_obj.return_policy = request.POST.get("return_policy", settings_obj.return_policy)
+        new_key = request.POST.get("gemini_api_key", "").strip()
+        if new_key:
+            settings_obj.gemini_api_key = new_key
         settings_obj.custom_ai_instructions = request.POST.get("custom_ai_instructions", settings_obj.custom_ai_instructions)
         settings_obj.save()
 

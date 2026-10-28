@@ -70,6 +70,24 @@
 
                     <div class="col-12">
                         <label class="form-label fw-semibold text-primary">
+                            <i class="fa-solid fa-key me-1"></i> Google Gemini API Key
+                        </label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-end-0"><i class="fa-solid fa-lock text-muted"></i></span>
+                            <input type="password" name="gemini_api_key" class="form-control border-start-0" value="{{ settings.gemini_api_key|default:'' }}" placeholder="AIzaSy... (Paste key here or in .env)">
+                        </div>
+                        <span class="fs-8 text-muted d-block mt-1">
+                            Don't have a key? Get one instantly for free at <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-primary fw-bold">Google AI Studio</a>.
+                            {% if settings.gemini_api_key %}
+                                <span class="badge bg-success-subtle text-success ms-2"><i class="fa-solid fa-circle-check"></i> Key Configured in DB</span>
+                            {% else %}
+                                <span class="badge bg-info-subtle text-info ms-2"><i class="fa-solid fa-info-circle"></i> Local Intelligent Fallback Active</span>
+                            {% endif %}
+                        </span>
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label fw-semibold text-primary">
                             <i class="fa-solid fa-brain me-1"></i> Custom AI Personality & Guidelines (Gemini Instructions)
                         </label>
                         <textarea name="custom_ai_instructions" class="form-control" rows="3" placeholder="e.g. Always be welcoming. If customer asks for discount, tell them about current combo offers.">{{ settings.custom_ai_instructions|default:'' }}</textarea>

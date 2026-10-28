@@ -13,6 +13,12 @@ class ShopSettings(models.Model):
     weekly_off = models.CharField(max_length=50, default="Open all 7 days")
     upi_id = models.CharField(max_length=100, blank=True, null=True, default="dukaan@upi")
     return_policy = models.TextField(default="Returns accepted within 2 days with valid invoice. Perishable goods non-returnable.")
+    gemini_api_key = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        help_text="Google Gemini API Key (or configure in .env as GEMINI_API_KEY)"
+    )
     custom_ai_instructions = models.TextField(
         blank=True,
         null=True,
