@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: smart-dukaan
+    env: python
+    region: singapore
+    plan: free
+    buildCommand: "./build.sh"
+    startCommand: "gunicorn core.wsgi:application"
+    envVars:
+      - key: DEBUG
+        value: "False"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DB_ENGINE
+        value: sqlite
+      - key: GEMINI_API_KEY
+        sync: false
