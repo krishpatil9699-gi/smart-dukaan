@@ -1,4 +1,5 @@
 import os
+import urllib.parse
 from pathlib import Path
 from dotenv import load_dotenv
 import dj_database_url
@@ -70,16 +71,39 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'core.wsgi.application'
 
+def sanitize_database_url(url: str) -> str:
+    """Auto-encodes special characters in database passwords (e.g. @, #, *) to avoid URI parsing corruption."""
+    if not url:
+        return url
+    for proto in ['postgresql://', 'postgres://', 'mysql://']:
+        if url.startswith(proto):
+            rest = url[len(proto):]
+            if '@' in rest and ':' in rest:
+                first_colon_idx = rest.find(':')
+                last_at_idx = rest.rfind('@')
+                if first_colon_idx < last_at_idx:
+                    user_part = rest[:first_colon_idx]
+                    host_and_rest = rest[last_at_idx + 1:]
+                    raw_password = rest[first_colon_idx + 1:last_at_idx]
+                    unquoted = urllib.parse.unquote_plus(raw_password)
+                    encoded_password = urllib.parse.quote_plus(unquoted)
+                    return f'{proto}{user_part}:{encoded_password}@{host_and_rest}'
+    return url
+
 # Database Setup: Supports DATABASE_URL (Cloud MySQL/Postgres), Standard MySQL, and SQLite fallback
 DATABASE_URL = os.getenv('DATABASE_URL')
 DB_ENGINE = os.getenv('DB_ENGINE', '').lower()
 
 if DATABASE_URL:
+    clean_url = sanitize_database_url(DATABASE_URL)
+    db_config = dj_database_url.config(
+        default=clean_url,
+        conn_max_age=600,
+    )
+    if 'supabase' in clean_url or 'postgres' in clean_url:
+        db_config.setdefault('OPTIONS', {})['sslmode'] = 'require'
     DATABASES = {
-        'default': dj_database_url.config(
-            default=DATABASE_URL,
-            conn_max_age=600,
-        )
+        'default': db_config
     }
 elif DB_ENGINE == 'mysql' and os.getenv('DB_PASSWORD'):
     DATABASES = {
