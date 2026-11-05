@@ -72,7 +72,7 @@ WSGI_APPLICATION = 'core.wsgi.application'
 
 # Database Setup: Supports DATABASE_URL (Cloud MySQL/Postgres), Standard MySQL, and SQLite fallback
 DATABASE_URL = os.getenv('DATABASE_URL')
-DB_ENGINE = os.getenv('DB_ENGINE', 'mysql').lower()
+DB_ENGINE = os.getenv('DB_ENGINE', '').lower()
 
 if DATABASE_URL:
     DATABASES = {
@@ -81,7 +81,7 @@ if DATABASE_URL:
             conn_max_age=600,
         )
     }
-elif DB_ENGINE == 'mysql':
+elif DB_ENGINE == 'mysql' and os.getenv('DB_PASSWORD'):
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.mysql',
